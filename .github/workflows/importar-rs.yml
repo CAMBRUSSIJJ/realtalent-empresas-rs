@@ -17,12 +17,12 @@ concurrency:
   cancel-in-progress: false
 jobs:
   import:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 330
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d5385e87ad8328c4b
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Dependências
-        run: python3 -m pip install duckdb==1.4.4
+        run: python3 -m pip install duckdb==1.4.3
       - name: Baixar e validar todos os registros RS
         env:
           SNAPSHOT: ${{ inputs.snapshot || '2026-10-13' }}
