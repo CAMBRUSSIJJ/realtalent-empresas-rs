@@ -1,0 +1,39 @@
+name: Importar base estadual RS
+on:
+  workflow_dispatch:
+    inputs:
+      snapshot:
+        description: 'Competência no espelho (AAAA-MM-DD)'
+        required: true
+        default: '2026-10-13'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/importar-rs.yml'
+permissions:
+  contents: write
+concurrency:
+  group: importar-rs
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d5385e87ad8328c4b
+      - name: Dependências
+        run: python3 -m pip install duckdb==1.4.4
+      - name: Baixar e validar todos os registros RS
+        env:
+          SNAPSHOT: ${{ inputs.snapshot || '2026-10-13' }}
+        run: python3 scripts/import_rs.py --snapshot "$SNAPSHOT" --out release
+      - name: Publicar release após validação
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SNAPSHOT: ${{ inputs.snapshot || '2026-10-13' }}
+        run: |
+          set -euo pipefail
+          TAG="rs-${SNAPSHOT}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          gh release create "$TAG" --draft --title "Base RS ${SNAPSHOT}" --notes "Dados públicos de estabelecimentos da Receita Federal, espelho Casa dos Dados. Sem telefone, email, endereço, CPF ou QSA. Cobertura validada pelo importador." --target "$GITHUB_SHA"
+          gh release upload "$TAG" release/*.parquet release/manifest.json
+          gh release edit "$TAG" --draft=false --latest
